@@ -1,3 +1,4 @@
+import Image from "next/image";
 import Link from "next/link";
 // Importer le composant Image de Next.js si vous avez un logo
 // import Image from 'next/image';
@@ -8,10 +9,16 @@ export default function Header() {
       <nav className="container mx-auto px-4 py-3 flex justify-between items-center">
         <Link
           href="/"
-          className="text-2xl font-bold text-green-600 dark:text-green-400"
+          className="flex items-center text-2xl font-bold text-green-600 dark:text-green-400"
         >
-          {/* Optionnel: Si vous avez un logo SVG ou une image */}
-          {/* <Image src="/acorn-logo.svg" alt="Acorn Finance Logo" width={32} height={32} className="inline-block mr-2" /> */}
+          <Image
+            src="/acorn-logo.svg" // Chemin depuis public/
+            alt="Acorn Finance Logo"
+            width={32} // Largeur réelle de l'image (ou ratio)
+            height={32} // Hauteur réelle de l'image (ou ratio)
+            className="mr-2" // Un peu d'espace à droite
+            priority // Indique à Next.js de charger cette image en priorité (LCP)
+          />
           Acorn Finance
         </Link>
         <div>

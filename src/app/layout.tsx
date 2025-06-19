@@ -1,10 +1,23 @@
 import type { Metadata } from "next";
-import { Inter } from "next/font/google";
+import { Inter, Poppins } from "next/font/google";
 import "./globals.css";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
 
-const inter = Inter({ subsets: ["latin"] });
+// Configurez Inter pour le corps du texte
+const inter = Inter({
+  subsets: ["latin"],
+  variable: "--font-inter", // Créer une variable CSS pour Inter
+  display: "swap", // Bon pour la performance et éviter le FOUT
+});
+
+// Configurez Poppins pour les titres
+const poppins = Poppins({
+  subsets: ["latin"],
+  weight: ["400", "600", "700"], // Spécifiez les poids que vous utiliserez
+  variable: "--font-poppins", // Créer une variable CSS pour Poppins
+  display: "swap",
+});
 
 export const metadata: Metadata = {
   title: {
@@ -102,10 +115,13 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="fr">
+    // Appliquez les variables de police à la balise html ou body
+    <html lang="fr" className={`${inter.variable} ${poppins.variable}`}>
       <body
-        className={`${inter.className} bg-slate-50 dark:bg-slate-900 text-slate-900 dark:text-slate-50 flex flex-col min-h-screen`}
+        className={`font-sans bg-slate-50 dark:bg-slate-900 text-slate-900 dark:text-slate-50 flex flex-col min-h-screen`}
       >
+        {" "}
+        {/* font-sans utilisera Inter par défaut */}
         <Header />
         <main className="flex-grow container mx-auto px-4 py-8">
           {children}

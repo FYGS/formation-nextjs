@@ -1,1 +1,58 @@
 @import "tailwindcss";
+
+/* 1. Définition des variables CSS natives pour les thèmes clair et sombre */
+:root {
+  /* Thème Clair par défaut */
+  --background-rgb: 248, 250, 252; /* slate-50 */
+  --foreground-rgb: 15, 23, 42; /* slate-900 */
+
+  --primary-rgb: 79, 172, 80; /* acorn-green (approximatif pour #4CAF50) */
+  --primary-foreground-rgb: 255, 255, 255; /* blanc pour le texte sur primaire */
+
+  --card-rgb: 255, 255, 255; /* blanc pour les cartes */
+  --card-foreground-rgb: 15, 23, 42; /* slate-900 pour texte sur carte */
+
+  --border-rgb: 226, 232, 240; /* slate-200 pour les bordures */
+
+  /* Variables pour les polices (elles sont déjà définies par next/font sur <html>,
+     mais nous pourrions les ré-assigner ici si nous voulions une sémantique différente
+     ou des fallbacks, bien que ce ne soit généralement pas nécessaire avec next/font) */
+  /* --font-sans-family: var(--font-inter); */
+  /* --font-heading-family: var(--font-poppins); */
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    /* Thème Sombre */
+    --background-rgb: 15, 23, 42; /* slate-900 */
+    --foreground-rgb: 248, 250, 252; /* slate-50 */
+
+    --primary-rgb: 52, 211, 73; /* green-400 (approximatif pour un vert plus vif en sombre) */
+    --primary-foreground-rgb: 15, 23, 42; /* slate-900 pour le texte sur primaire en sombre */
+
+    --card-rgb: 30, 41, 59; /* slate-800 pour les cartes */
+    --card-foreground-rgb: 248, 250, 252; /* slate-50 pour texte sur carte en sombre */
+
+    --border-rgb: 51, 65, 85; /* slate-700 pour les bordures */
+  }
+}
+
+/* 4. Application des styles de base au body en utilisant nos variables CSS */
+body {
+  background-color: rgb(
+    var(--background-rgb)
+  ); /* Utilise la variable de fond */
+  color: rgb(var(--foreground-rgb)); /* Utilise la variable de texte */
+  font-family: var(--font-inter), sans-serif; /* Police par défaut pour le corps */
+  /* min-height: 100vh et flex-col pour le sticky footer sont gérés par les classes Tailwind sur <body> dans layout.tsx */
+}
+
+/* Styles pour les titres utilisant la police de titre */
+h1,
+h2,
+h3,
+h4,
+h5,
+h6 {
+  font-family: var(--font-poppins), serif;
+}
