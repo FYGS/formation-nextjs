@@ -3,7 +3,7 @@ import InvoicesTable from '@/components/dashboard/invoices/InvoicesTable';
 import { fetchFilteredInvoices } from '@/lib/data'; // Importer notre fonction
 import Search from '@/components/dashboard/Search';
 import Pagination from '@/components/dashboard/Pagination';
-// import { CreateInvoice } from '@/components/dashboard/invoices/Buttons'; // Nous ajouterons ce composant plus tard
+import { CreateInvoice } from '@/components/dashboard/invoices/Buttons';
 
 export const dynamic = 'force-dynamic'; // Force le rendu dynamique pour cette route
 
@@ -31,8 +31,8 @@ export default async function InvoicesPage({
 				<h1 className="text-2xl md:text-3xl font-heading font-bold text-slate-800 dark:text-white">
 					Factures
 				</h1>
-				{/* Bouton Créer une facture (sera ajouté au Module 9) */}
-				{/* <CreateInvoice /> */}
+				{/* Bouton Créer une facture */}
+				<CreateInvoice />
 			</div>
 			<div className="mt-4 flex items-center justify-between gap-2 md:mt-8">
         {/* Barre de recherche */}

@@ -1,24 +1,23 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
 // src/lib/data.ts
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import { sql } from '@vercel/postgres';
-import { unstable_noStore as noStore } from 'next/cache'; // Pour désactiver le caching si besoin
+import { unstable_noStore as noStore } from 'next/cache';
 
-// Types que nous allons utiliser (vous pouvez les affiner)
+// Types que nous allons utiliser
 export type Customer = {
-  id: string;
+  id: string; // UUID
   name: string;
   email: string;
-  image_url: string;
+  image_url: string; // Peut être un chemin relatif vers /public ou une URL complète
+  // address?: string; // Déjà dans le schéma, peut être ajouté au type si besoin ici
 };
 
-// ... (Types Customer, Invoice, InvoiceWithCustomer restent les mêmes) ...
-// MAJ du type Invoice pour correspondre à la DB (amount_in_cents, status avec nos valeurs)
 export type InvoiceFromDB = {
   id: string;
   customer_id: string;
   amount_in_cents: number;
   status: 'pending' | 'paid' | 'overdue';
-  date: Date; // Le driver pg retourne les dates comme des objets Date
+  date: Date;
 };
 
 export type FormattedInvoice = {
@@ -32,19 +31,36 @@ export type FormattedInvoice = {
   date: string; // Format YYYY-MM-DD pour l'affichage
 };
 
+export type InvoiceItem = {
+  id: string;
+  description: string;
+  quantity: number;
+  unitPrice: number; // En euros
+  total: number; // En euros
+};
+
+export type FullInvoice = {
+  id: string;
+  customer_id: string;
+  customer_name: string;
+  customer_email: string;
+  customer_image_url?: string;
+  amount: number; // Total en euros
+  status: 'pending' | 'paid' | 'overdue';
+  date: string; // Format YYYY-MM-DD
+  billing_address: string | null;
+  items: InvoiceItem[];
+};
+
+
 const ITEMS_PER_PAGE = 6;
 
 export async function fetchFilteredInvoices(
   query: string,
   currentPage: number,
 ): Promise<{ invoices: FormattedInvoice[]; totalPages: number }> {
-  noStore(); // Désactive le caching pour cette requête CRUCIAL pour forcer le rafraîchissement des données
+  noStore();
   const offset = (currentPage - 1) * ITEMS_PER_PAGE;
-
-  // // SIMULER UN DÉLAI IMPORTANT
-  // console.log('Simulating slow data fetch for invoices...');
-  // await new Promise((resolve) => setTimeout(resolve, 3000)); // 3 secondes de délai
-  // console.log('Delay finished, fetching data...');
 
   try {
     const invoicesQuery = sql`
@@ -88,8 +104,8 @@ export async function fetchFilteredInvoices(
 
     const invoices = invoicesData.rows.map((invoice: any) => ({
       ...invoice,
-      amount: invoice.amount_in_cents / 100, // Convertir en euros
-      date: new Date(invoice.date).toISOString().split('T')[0], // Formater la date
+      amount: invoice.amount_in_cents / 100,
+      date: new Date(invoice.date).toISOString().split('T')[0],
     })) as FormattedInvoice[];
 
     const totalCount = Number(countData.rows[0].count ?? '0');
@@ -102,12 +118,10 @@ export async function fetchFilteredInvoices(
   }
 }
 
-// Ancienne fonction fetchInvoices (simple, sans recherche/pagination)
-// Kept for reference or simpler use cases if needed, but fetchFilteredInvoices is preferred
 export async function fetchAllInvoicesSimple(): Promise<FormattedInvoice[]> {
   noStore();
   try {
-    const data = await sql`
+    const data = await sql<InvoiceFromDB & { customer_name: string; customer_email: string; customer_image_url: string; }>`
       SELECT
         invoices.id,
         invoices.amount_in_cents,
@@ -122,16 +136,15 @@ export async function fetchAllInvoicesSimple(): Promise<FormattedInvoice[]> {
       ORDER BY invoices.date DESC;
     `;
 
-    // Formater les données pour le frontend
-    const formattedInvoices = data.rows.map((invoice: any) => ({
+    const formattedInvoices = data.rows.map((invoice) => ({
       id: invoice.id,
       customer_id: invoice.customer_id,
       customer_name: invoice.customer_name,
       customer_email: invoice.customer_email,
       customer_image_url: invoice.customer_image_url,
-      amount: invoice.amount_in_cents / 100, // Convertir en euros
-      status: invoice.status as 'pending' | 'paid' | 'overdue',
-      date: new Date(invoice.date).toISOString().split('T')[0], // Format YYYY-MM-DD
+      amount: invoice.amount_in_cents / 100,
+      status: invoice.status,
+      date: new Date(invoice.date).toISOString().split('T')[0],
     }));
     return formattedInvoices;
   } catch (error) {
@@ -140,11 +153,6 @@ export async function fetchAllInvoicesSimple(): Promise<FormattedInvoice[]> {
   }
 }
 
-
-// ... (fetchCustomers et fetchInvoiceById restent comme définis précédemment) ...
-// S'assurer que fetchInvoiceById utilise bien amount_in_cents et unit_price_in_cents
-// et fait la conversion en euros pour les montants.
-// Par exemple, pour fetchInvoiceById :
 export async function fetchInvoiceById(id: string): Promise<FullInvoice | null> {
   noStore();
   try {
@@ -202,26 +210,28 @@ export async function fetchInvoiceById(id: string): Promise<FullInvoice | null> 
     };
   } catch (error) {
     console.error('Database Error fetching invoice by ID:', error);
-    return null;
+    return null; // Ou throw new Error si vous voulez qu'un error.tsx le capture au niveau page
   }
 }
-// Nouveaux types pour fetchInvoiceById
-export type InvoiceItem = {
-  id: string;
-  description: string;
-  quantity: number;
-  unitPrice: number;
-  total: number;
-};
-export type FullInvoice = {
-  id: string;
-  customer_id: string;
-  customer_name: string;
-  customer_email: string;
-  customer_image_url?: string;
-  amount: number;
-  status: 'pending' | 'paid' | 'overdue';
-  date: string;
-  billing_address: string | null;
-  items: InvoiceItem[];
-};
+
+export async function fetchCustomers(): Promise<Customer[]> {
+  noStore(); // Désactive le caching pour cette requête pour toujours avoir la liste à jour
+  try {
+    // await new Promise((resolve) => setTimeout(resolve, 2000)); // Simuler un délai si besoin pour tester le loading state
+    const data = await sql<Customer>`
+      SELECT
+        id,
+        name,
+        email,
+        image_url
+      FROM customers
+      ORDER BY name ASC
+    `;
+
+    const customers = data.rows;
+    return customers;
+  } catch (err) {
+    console.error('Database Error fetching customers:', err);
+    throw new Error('Failed to fetch all customers.');
+  }
+}
