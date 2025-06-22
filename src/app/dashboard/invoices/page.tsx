@@ -1,7 +1,7 @@
 // src/app/dashboard/invoices/page.tsx
 import InvoicesTable from '@/components/dashboard/invoices/InvoicesTable';
 import { fetchFilteredInvoices } from '@/lib/data'; // Importer notre fonction
-// import Search from '@/components/dashboard/Search'; // Nous ajouterons ce composant plus tard
+import Search from '@/components/dashboard/Search';
 // import Pagination from '@/components/dashboard/Pagination'; // Nous ajouterons ce composant plus tard
 // import { CreateInvoice } from '@/components/dashboard/invoices/Buttons'; // Nous ajouterons ce composant plus tard
 
@@ -36,7 +36,7 @@ export default async function InvoicesPage({
 			</div>
 			<div className="mt-4 flex items-center justify-between gap-2 md:mt-8">
 				{/* Barre de recherche (sera ajoutée au Module 9) */}
-				{/* <Search placeholder="Rechercher des factures..." /> */}
+				<Search placeholder="Rechercher des factures..." />
 			</div>
 
 			{/* La table reçoit maintenant les factures en props */}

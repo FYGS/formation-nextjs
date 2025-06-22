@@ -41,10 +41,10 @@ export async function fetchFilteredInvoices(
   noStore(); // Désactive le caching pour cette requête CRUCIAL pour forcer le rafraîchissement des données
   const offset = (currentPage - 1) * ITEMS_PER_PAGE;
 
-  // SIMULER UN DÉLAI IMPORTANT
-  console.log('Simulating slow data fetch for invoices...');
-  await new Promise((resolve) => setTimeout(resolve, 3000)); // 3 secondes de délai
-  console.log('Delay finished, fetching data...');
+  // // SIMULER UN DÉLAI IMPORTANT
+  // console.log('Simulating slow data fetch for invoices...');
+  // await new Promise((resolve) => setTimeout(resolve, 3000)); // 3 secondes de délai
+  // console.log('Delay finished, fetching data...');
 
   try {
     const invoicesQuery = sql`
