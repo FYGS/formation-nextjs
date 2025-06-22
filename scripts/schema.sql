@@ -46,18 +46,18 @@ CREATE TABLE invoice_items (
 
 -- Clients (avec adresses)
 INSERT INTO customers (id, name, email, image_url, address) VALUES
-('3958dc9e-712f-4377-85e9-fec4b6a6442a', 'Delba de Oliveira', 'delba@oliveira.com', '/customers/delba-de-oliveira.png', '1 Tech Avenue, Lisbon, Portugal'),
-('3958dc9e-742f-4377-85e9-fec4b6a6442a', 'Lee Robinson', 'lee@robinson.com', '/customers/lee-robinson.png', '123 Next St, San Francisco, CA'),
-('3958dc9e-737f-4377-85e9-fec4b6a6442a', 'Hector Simpson', 'hector@simpson.com', '/customers/hector-simpson.png', '742 Evergreen Terrace, Springfield'),
-('50ca3e18-62cd-11ee-8c99-0242ac120002', 'Steven Tey', 'steven@tey.com', '/customers/steven-tey.png', 'Innovation Park, Singapore'),
-('3958dc9e-787f-4377-85e9-fec4b6a6442a', 'Steph Dietz', 'steph@dietz.com', '/customers/steph-dietz.png', 'Component Ave, Berlin, Germany');
+('3958dc9e-712f-4377-85e9-fec4b6a6442a', 'Delba de Oliveira', 'delba@oliveira.com', 'https://i.pravatar.cc/150?img=70', '1 Tech Avenue, Lisbon, Portugal'),
+('3958dc9e-742f-4377-85e9-fec4b6a6442a', 'Lee Robinson', 'lee@robinson.com', 'https://i.pravatar.cc/150?img=71', '123 Next St, San Francisco, CA'),
+('3958dc9e-737f-4377-85e9-fec4b6a6442a', 'Hector Simpson', 'hector@simpson.com', 'https://i.pravatar.cc/150?img=52', '742 Evergreen Terrace, Springfield'),
+('50ca3e18-62cd-11ee-8c99-0242ac120002', 'Steven Tey', 'steven@tey.com', 'https://i.pravatar.cc/150?img=53', 'Innovation Park, Singapore'),
+('3958dc9e-787f-4377-85e9-fec4b6a6442a', 'Steph Dietz', 'steph@dietz.com', 'https://i.pravatar.cc/150?img=54', 'Component Ave, Berlin, Germany');
 -- Ajoutez les autres clients avec leurs adresses...
 INSERT INTO customers (id, name, email, image_url, address) VALUES
-('76d65c26-f784-44a2-ac19-586678f7c2f2', 'Michael Novotny', 'michael@novotny.com', '/customers/michael-novotny.png', 'Main Street 1, Prague, Czech Republic'),
-('d6e15727-9fe1-4961-8c5b-8d0f871247ba', 'Evil Rabbit', 'evil@rabbit.com', '/customers/evil-rabbit.png', 'The Warren, Wonderland'),
-('126eed9c-c90c-4ef6-a4a8-fcf7408d3c66', 'Emil Kowalski', 'emil@kowalski.com', '/customers/emil-kowalski.png', 'UI Lane, Warsaw, Poland'),
-('CC27C14A-0ACF-4F4A-A6C9-D45682C144EE', 'Amy Burns', 'amy@burns.com', '/customers/amy-burns.png', '10 Downing Street, London, UK'),
-('246A6A41-9728-4AA2-97EC-E799D83A53D4', 'Suresh Kumar', 'suresh@kumar.com', '/customers/suresh-kumar.png', 'Tech Park, Bangalore, India');
+('76d65c26-f784-44a2-ac19-586678f7c2f2', 'Michael Novotny', 'michael@novotny.com', 'https://i.pravatar.cc/150?img=30', 'Main Street 1, Prague, Czech Republic'),
+('d6e15727-9fe1-4961-8c5b-8d0f871247ba', 'Evil Rabbit', 'evil@rabbit.com', 'https://i.pravatar.cc/150?img=31', 'The Warren, Wonderland'),
+('126eed9c-c90c-4ef6-a4a8-fcf7408d3c66', 'Emil Kowalski', 'emil@kowalski.com', 'https://i.pravatar.cc/150?img=32', 'UI Lane, Warsaw, Poland'),
+('CC27C14A-0ACF-4F4A-A6C9-D45682C144EE', 'Amy Burns', 'amy@burns.com', 'https://i.pravatar.cc/150?img=33', '10 Downing Street, London, UK'),
+('246A6A41-9728-4AA2-97EC-E799D83A53D4', 'Suresh Kumar', 'suresh@kumar.com', 'https://i.pravatar.cc/150?img=34', 'Tech Park, Bangalore, India');
 
 
 -- Factures (avec adresses de facturation - peuvent être les mêmes que celles du client)
