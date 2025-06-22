@@ -38,7 +38,7 @@ export async function fetchFilteredInvoices(
   query: string,
   currentPage: number,
 ): Promise<{ invoices: FormattedInvoice[]; totalPages: number }> {
-  noStore(); // Désactive le caching pour cette requête
+  noStore(); // Désactive le caching pour cette requête CRUCIAL pour forcer le rafraîchissement des données
   const offset = (currentPage - 1) * ITEMS_PER_PAGE;
 
   try {

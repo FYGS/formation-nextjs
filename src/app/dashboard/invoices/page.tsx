@@ -5,6 +5,8 @@ import { fetchFilteredInvoices } from '@/lib/data'; // Importer notre fonction
 // import Pagination from '@/components/dashboard/Pagination'; // Nous ajouterons ce composant plus tard
 // import { CreateInvoice } from '@/components/dashboard/invoices/Buttons'; // Nous ajouterons ce composant plus tard
 
+export const dynamic = 'force-dynamic'; // Force le rendu dynamique pour cette route
+
 // Cette page est maintenant un Server Component
 export default async function InvoicesPage({
 	searchParams,
