@@ -2,7 +2,7 @@
 import InvoicesTable from '@/components/dashboard/invoices/InvoicesTable';
 import { fetchFilteredInvoices } from '@/lib/data'; // Importer notre fonction
 import Search from '@/components/dashboard/Search';
-// import Pagination from '@/components/dashboard/Pagination'; // Nous ajouterons ce composant plus tard
+import Pagination from '@/components/dashboard/Pagination';
 // import { CreateInvoice } from '@/components/dashboard/invoices/Buttons'; // Nous ajouterons ce composant plus tard
 
 export const dynamic = 'force-dynamic'; // Force le rendu dynamique pour cette route
@@ -20,7 +20,7 @@ export default async function InvoicesPage({
 	const currentPage = Number(searchParams?.page) || 1;
 
 	// Récupérer les données directement sur le serveur
-	const { invoices } = await fetchFilteredInvoices(
+	const { invoices, totalPages } = await fetchFilteredInvoices(
 		query,
 		currentPage,
 	);
@@ -35,7 +35,7 @@ export default async function InvoicesPage({
 				{/* <CreateInvoice /> */}
 			</div>
 			<div className="mt-4 flex items-center justify-between gap-2 md:mt-8">
-				{/* Barre de recherche (sera ajoutée au Module 9) */}
+        {/* Barre de recherche */}
 				<Search placeholder="Rechercher des factures..." />
 			</div>
 
@@ -43,8 +43,8 @@ export default async function InvoicesPage({
 			<InvoicesTable invoices={invoices} />
 
 			<div className="mt-5 flex w-full justify-center">
-				{/* Pagination (sera ajoutée au Module 9) */}
-				{/* <Pagination totalPages={totalPages} /> */}
+				{/* Pagination */}
+				<Pagination totalPages={totalPages} />
 			</div>
 		</div>
 	);

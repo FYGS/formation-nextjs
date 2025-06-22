@@ -47,7 +47,7 @@ CREATE TABLE invoice_items (
 -- Clients (avec adresses)
 INSERT INTO customers (id, name, email, image_url, address) VALUES
 ('3958dc9e-712f-4377-85e9-fec4b6a6442a', 'Delba de Oliveira', 'delba@oliveira.com', 'https://i.pravatar.cc/150?img=70', '1 Tech Avenue, Lisbon, Portugal'),
-('3958dc9e-742f-4377-85e9-fec4b6a6442a', 'Lee Robinson', 'lee@robinson.com', 'https://i.pravatar.cc/150?img=71', '123 Next St, San Francisco, CA'),
+('3958dc9e-742f-4377-85e9-fec4b6a6442a', 'Lee Robinson', 'lee@robinson.com', 'https://i.pravatar.cc/150?img=21', '123 Next St, San Francisco, CA'),
 ('3958dc9e-737f-4377-85e9-fec4b6a6442a', 'Hector Simpson', 'hector@simpson.com', 'https://i.pravatar.cc/150?img=52', '742 Evergreen Terrace, Springfield'),
 ('50ca3e18-62cd-11ee-8c99-0242ac120002', 'Steven Tey', 'steven@tey.com', 'https://i.pravatar.cc/150?img=53', 'Innovation Park, Singapore'),
 ('3958dc9e-787f-4377-85e9-fec4b6a6442a', 'Steph Dietz', 'steph@dietz.com', 'https://i.pravatar.cc/150?img=54', 'Component Ave, Berlin, Germany');
@@ -94,6 +94,35 @@ INSERT INTO invoice_items (invoice_id, description, quantity, unit_price_in_cent
 VALUES ('55555555-5555-5555-5555-555555555555', 'Full-Stack Development Course', 10, 50000);
 
 -- Ajoutez les autres factures avec leurs items en utilisant des UUIDs explicites
+-- Facture 6: Michael Novotny
+INSERT INTO invoices (id, customer_id, amount_in_cents, status, date, billing_address)
+VALUES ('66666666-6666-6666-6666-666666666666', '76d65c26-f784-44a2-ac19-586678f7c2f2', 120000, 'paid', '2023-03-15', 'Main Street 1, Prague, Czech Republic');
+INSERT INTO invoice_items (invoice_id, description, quantity, unit_price_in_cents)
+VALUES ('66666666-6666-6666-6666-666666666666', 'Web Development Services', 1, 120000);
+
+-- Facture 7: Evil Rabbit
+INSERT INTO invoices (id, customer_id, amount_in_cents, status, date, billing_address)
+VALUES ('77777777-7777-7777-7777-777777777777', 'd6e15727-9fe1-4961-8c5b-8d0f871247ba', 30000, 'pending', '2023-04-01', 'The Warren, Wonderland');
+INSERT INTO invoice_items (invoice_id, description, quantity, unit_price_in_cents)
+VALUES ('77777777-7777-7777-7777-777777777777', 'Magic Potions (Lot de 5)', 1, 30000);
+
+-- Facture 8: Emil Kowalski
+INSERT INTO invoices (id, customer_id, amount_in_cents, status, date, billing_address)
+VALUES ('88888888-8888-8888-8888-888888888888', 'd6e15727-9fe1-4961-8c5b-8d0f871247ba', 30000, 'pending', '2023-04-01', 'The Warren, Wonderland');
+INSERT INTO invoice_items (invoice_id, description, quantity, unit_price_in_cents)
+VALUES ('88888888-8888-8888-8888-888888888888', 'Magic Potions (Lot de 5)', 1, 30000);
+
+-- Facture 9: Amy Burns
+INSERT INTO invoices (id, customer_id, amount_in_cents, status, date, billing_address)
+VALUES ('99999999-9999-9999-9999-999999999999', 'CC27C14A-0ACF-4F4A-A6C9-D45682C144EE', 45000, 'paid', '2023-05-20', '10 Downing Street, London, UK');
+INSERT INTO invoice_items (invoice_id, description, quantity, unit_price_in_cents)
+VALUES ('99999999-9999-9999-9999-999999999999', 'Confidential Document Review', 1, 45000);
+
+-- Facture 10: Suresh Kumar
+INSERT INTO invoices (id, customer_id, amount_in_cents, status, date, billing_address)
+VALUES ('10101010-1010-1010-1010-101010101010', 'CC27C14A-0ACF-4F4A-A6C9-D45682C144EE', 60000, 'paid', '2023-06-15', '1 Infinite Loop, Cupertino, CA');
+INSERT INTO invoice_items (invoice_id, description, quantity, unit_price_in_cents)
+VALUES ('10101010-1010-1010-1010-101010101010', 'Apple Product Design Review', 1, 60000);
 
 -- Utilisateur de test
 INSERT INTO users (name, email, password) VALUES

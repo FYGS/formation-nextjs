@@ -32,7 +32,7 @@ export type FormattedInvoice = {
   date: string; // Format YYYY-MM-DD pour l'affichage
 };
 
-const ITEMS_PER_PAGE = 6; // Nous l'utiliserons plus tard pour la pagination
+const ITEMS_PER_PAGE = 6;
 
 export async function fetchFilteredInvoices(
   query: string,
