@@ -1,11 +1,8 @@
 // src/components/dashboard/invoices/CreateForm.tsx
-// Pour l'instant, pas besoin de 'use client' si on n'utilise pas useFormState
-// Mais il le deviendra à l'étape de validation avancée.
-// Pour être prêt, on peut déjà le marquer 'use client'.
-'use client';
+'use client'; // Nécessaire pour useFormState et la gestion d'état du formulaire
 
-import { Customer } from '@/lib/data'; // Type pour les clients
-import { createInvoice } from '@/lib/actions'; // Notre Server Action
+import { Customer } from '@/lib/data';
+import { createInvoice, State } from '@/lib/actions'; // Importer State également
 import Link from 'next/link';
 import {
 	CurrencyEuroIcon,
@@ -13,18 +10,28 @@ import {
 	CheckIcon,
 	ClockIcon,
 } from '@heroicons/react/24/outline';
-import { Button } from '@/components/Button'; // Un composant bouton générique
+import { Button } from '@/components/Button';
+import { useFormState, useFormStatus } from 'react-dom'; // Importer les hooks nécessaires
 
-export default function CreateForm({ customers }: { customers: Customer[] }) {
-	// Si nous n'utilisons pas useFormState pour l'instant, l'action peut être passée directement.
-	// const [state, dispatch] = useFormState(createInvoice, initialState); // Pour l'étape suivante
+// Composant pour le bouton de soumission qui affiche l'état pending
+function SubmitButton() {
+	const { pending } = useFormStatus(); // Hook pour connaître l'état de soumission du formulaire parent
 
 	return (
-		// L'attribut `action` du formulaire pointe vers notre Server Action
-		// Quand le formulaire est soumis, Next.js appelle `createInvoice` avec les données du formulaire.
-		<form action={createInvoice}>
-			{' '}
-			{/* Pour l'instant, prevState n'est pas géré ici */}
+		<Button type="submit" pending={pending}>
+			Créer la Facture
+		</Button>
+	);
+}
+
+export default function CreateForm({ customers }: { customers: Customer[] }) {
+	const initialState: State = { message: null, errors: {} };
+	// Utiliser useFormState pour lier l'action et gérer l'état
+	const [state, dispatch] = useFormState(createInvoice, initialState);
+
+	return (
+		// L'attribut `action` du formulaire est maintenant `dispatch` fourni par useFormState
+		<form action={dispatch}>
 			<div className="rounded-md bg-white dark:bg-slate-800 p-4 md:p-6 shadow">
 				{/* Customer Name */}
 				<div className="mb-4">
@@ -37,11 +44,10 @@ export default function CreateForm({ customers }: { customers: Customer[] }) {
 					<div className="relative">
 						<select
 							id="customer"
-							name="customerId" // Important : le nom doit correspondre à ce que la Server Action attend
+							name="customerId"
 							className="peer block w-full cursor-pointer rounded-md border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-700 py-2 pl-10 text-sm outline-2 placeholder:text-slate-500 dark:placeholder:text-slate-400 text-slate-900 dark:text-slate-50 focus:ring-1 focus:ring-green-500 focus:border-green-500"
 							defaultValue=""
-							aria-describedby="customer-error" // Pour les erreurs de validation futures
-							required // Validation HTML basique
+							aria-describedby="customer-error" // Lié à l'affichage d'erreur
 						>
 							<option value="" disabled>
 								Sélectionner un client
@@ -54,7 +60,18 @@ export default function CreateForm({ customers }: { customers: Customer[] }) {
 						</select>
 						<UserCircleIcon className="pointer-events-none absolute left-3 top-1/2 h-[18px] w-[18px] -translate-y-1/2 text-slate-500" />
 					</div>
-					{/* div pour afficher l'erreur customerId plus tard */}
+					{/* Affichage des erreurs pour customerId */}
+					<div id="customer-error" aria-live="polite" aria-atomic="true">
+						{state.errors?.customerId &&
+							state.errors.customerId.map((error: string) => (
+								<p
+									className="mt-2 text-sm text-red-500 dark:text-red-400"
+									key={error}
+								>
+									{error}
+								</p>
+							))}
+					</div>
 				</div>
 
 				{/* Invoice Amount */}
@@ -69,17 +86,28 @@ export default function CreateForm({ customers }: { customers: Customer[] }) {
 						<div className="relative">
 							<input
 								id="amount"
-								name="amount" // Correspond à la Server Action
+								name="amount"
 								type="number"
-								step="0.01" // Pour les centimes
+								step="0.01"
 								placeholder="Entrer le montant en EUR"
 								className="peer block w-full rounded-md border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-700 py-2 pl-10 text-sm outline-2 placeholder:text-slate-500 dark:placeholder:text-slate-400 text-slate-900 dark:text-slate-50 focus:ring-1 focus:ring-green-500 focus:border-green-500"
-								required
+								aria-describedby="amount-error"
 							/>
 							<CurrencyEuroIcon className="pointer-events-none absolute left-3 top-1/2 h-[18px] w-[18px] -translate-y-1/2 text-slate-500 peer-focus:text-green-500" />
 						</div>
 					</div>
-					{/* div pour afficher l'erreur amount plus tard */}
+					{/* Affichage des erreurs pour amount */}
+					<div id="amount-error" aria-live="polite" aria-atomic="true">
+						{state.errors?.amount &&
+							state.errors.amount.map((error: string) => (
+								<p
+									className="mt-2 text-sm text-red-500 dark:text-red-400"
+									key={error}
+								>
+									{error}
+								</p>
+							))}
+					</div>
 				</div>
 
 				{/* Invoice Status */}
@@ -88,15 +116,17 @@ export default function CreateForm({ customers }: { customers: Customer[] }) {
 						Définir le statut de la facture
 					</legend>
 					<div className="rounded-md border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-700 px-[14px] py-3">
-						<div className="flex gap-4">
+						<div className="flex flex-wrap gap-4">
+							{' '}
+							{/* flex-wrap pour un meilleur responsive */}
 							<div className="flex items-center">
 								<input
 									id="pending"
-									name="status" // Correspond à la Server Action
+									name="status"
 									type="radio"
 									value="pending"
 									className="h-4 w-4 cursor-pointer border-slate-300 dark:border-slate-600 bg-slate-100 dark:bg-slate-600 text-green-600 focus:ring-2 focus:ring-green-500 dark:focus:ring-green-400"
-									required
+									aria-describedby="status-error"
 								/>
 								<label
 									htmlFor="pending"
@@ -112,7 +142,7 @@ export default function CreateForm({ customers }: { customers: Customer[] }) {
 									type="radio"
 									value="paid"
 									className="h-4 w-4 cursor-pointer border-slate-300 dark:border-slate-600 bg-slate-100 dark:bg-slate-600 text-green-600 focus:ring-2 focus:ring-green-500 dark:focus:ring-green-400"
-									required
+									aria-describedby="status-error"
 								/>
 								<label
 									htmlFor="paid"
@@ -121,14 +151,38 @@ export default function CreateForm({ customers }: { customers: Customer[] }) {
 									Payée <CheckIcon className="h-4 w-4" />
 								</label>
 							</div>
-							{/* Vous pouvez ajouter 'overdue' ici si c'est un statut initial possible */}
 						</div>
 					</div>
-					{/* div pour afficher l'erreur status plus tard */}
+					{/* Affichage des erreurs pour status */}
+					<div id="status-error" aria-live="polite" aria-atomic="true">
+						{state.errors?.status &&
+							state.errors.status.map((error: string) => (
+								<p
+									className="mt-2 text-sm text-red-500 dark:text-red-400"
+									key={error}
+								>
+									{error}
+								</p>
+							))}
+					</div>
 				</fieldset>
 
-				{/* div pour afficher un message d'erreur général plus tard */}
+				{/* Affichage d'un message d'erreur général ou de succès (si pas de redirect) */}
+				<div aria-live="polite" aria-atomic="true">
+					{state.message && (
+						<p
+							className={`mt-2 text-sm ${
+								state.errors
+									? 'text-red-500 dark:text-red-400'
+									: 'text-green-500 dark:text-green-400'
+							}`}
+						>
+							{state.message}
+						</p>
+					)}
+				</div>
 			</div>
+
 			<div className="mt-6 flex justify-end gap-4">
 				<Link
 					href="/dashboard/invoices"
@@ -136,8 +190,7 @@ export default function CreateForm({ customers }: { customers: Customer[] }) {
 				>
 					Annuler
 				</Link>
-				{/* Type submit pour que le formulaire appelle l'action */}
-				<Button type="submit">Créer la Facture</Button>
+				<SubmitButton /> {/* Utiliser le composant SubmitButton */}
 			</div>
 		</form>
 	);
