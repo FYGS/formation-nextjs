@@ -1,6 +1,8 @@
 import Link from "next/link";
 import { FormattedInvoice } from "@/lib/data";
 import Image from "next/image";
+import { DeleteInvoiceButton, UpdateInvoice } from "./Buttons";
+import { EyeIcon } from "@heroicons/react/24/outline";
 
 // Fonction pour formater la date (simple exemple)
 const formatDate = (dateString: string) => {
@@ -150,21 +152,19 @@ export default function InvoicesTable({ invoices }: InvoicesTableProps) {
 										</span>
 									</td>
 									<td className="whitespace-nowrap py-4 pl-3 pr-4 text-right text-sm font-medium sm:pr-6">
-										<div className="flex justify-end gap-3">
+										<div className="flex items-center justify-end gap-2">
+											{' '}
+											{/* items-center et gap réduit */}
 											<Link
 												href={`/dashboard/invoices/${invoice.id}`}
-												className="text-green-600 hover:text-green-800 dark:text-green-400 dark:hover:text-green-300"
+												className="rounded-md border p-2 hover:bg-slate-100 dark:hover:bg-slate-700"
+												title="Voir la facture"
 											>
-												Voir
+												{/* Remplacer par une icône "oeil" si désiré */}
+												<EyeIcon className="w-5 text-green-500 dark:text-green-400" />
 											</Link>
-											<Link
-												href={`/dashboard/invoices/${invoice.id}/edit`}
-												className="text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300"
-											>
-												Modifier
-											</Link>
-											{/* Bouton Supprimer (sera implémenté au Module 9) */}
-											{/* <DeleteInvoice id={invoice.id} /> */}
+											<UpdateInvoice id={invoice.id} />
+											<DeleteInvoiceButton id={invoice.id} />
 										</div>
 									</td>
 								</tr>

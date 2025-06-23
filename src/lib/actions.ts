@@ -128,3 +128,20 @@ export async function updateInvoice(
   revalidatePath(`/dashboard/invoices/${id}`); // Revalider la page de détail
   redirect('/dashboard/invoices'); // Rediriger vers la liste
 }
+
+export async function deleteInvoice(id: string) {
+  // Pour des raisons de sécurité, on pourrait ajouter une vérification ici
+  // pour s'assurer que l'utilisateur a le droit de supprimer cette facture.
+
+  // throw new Error('Simulated Deletion Error'); // Pour tester error.tsx plus tard
+
+  try {
+    await sql`DELETE FROM invoices WHERE id = ${id}`;
+    // Note: Les invoice_items liés seront supprimés automatiquement grâce à ON DELETE CASCADE
+    revalidatePath('/dashboard/invoices'); // Revalider la liste des factures
+    return { message: 'Facture supprimée.' }; // Message optionnel pour le client
+  } catch (error) {
+    console.error('Database Error (deleteInvoice):', error);
+    return { message: 'Erreur de base de données : Échec de la suppression de la facture.' };
+  }
+}
