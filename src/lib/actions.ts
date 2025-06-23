@@ -83,4 +83,48 @@ export async function createInvoice(prevState: State, formData: FormData) {
   // return { message: 'Facture créée avec succès !', errors: {} };
 }
 
-// ... (autres actions comme updateInvoice, deleteInvoice viendront ici) ...
+// Nous avons besoin du schéma complet pour la mise à jour, car l'ID est nécessaire.
+// La date n'est toujours pas modifiable via le formulaire pour l'instant.
+const UpdateInvoiceSchema = InvoiceSchema.omit({ date: true }); // id est inclus
+
+export async function updateInvoice(
+  id: string, // L'ID de la facture à mettre à jour, passé en argument lié (bound)
+  prevState: State,
+  formData: FormData
+) {
+  const validatedFields = UpdateInvoiceSchema.safeParse({
+    id: id, // Ajouter l'ID ici pour qu'il soit inclus dans validatedFields.data si besoin
+    customerId: formData.get('customerId'),
+    amount: formData.get('amount'),
+    status: formData.get('status'),
+  });
+
+  if (!validatedFields.success) {
+    console.error('Validation Errors (updateInvoice):', validatedFields.error.flatten().fieldErrors);
+    return {
+      errors: validatedFields.error.flatten().fieldErrors,
+      message: 'Champs manquants ou invalides. Échec de la mise à jour de la facture.',
+    };
+  }
+
+  const { customerId, amount, status } = validatedFields.data;
+  const amountInCents = Math.round(amount * 100);
+
+  try {
+    await sql`
+      UPDATE invoices
+      SET customer_id = ${customerId}, amount_in_cents = ${amountInCents}, status = ${status}
+      WHERE id = ${id}
+    `;
+  } catch (error) {
+    console.error('Database Error (updateInvoice):', error);
+    return {
+      message: 'Erreur de base de données : Échec de la mise à jour de la facture.',
+      errors: {}
+    };
+  }
+
+  revalidatePath('/dashboard/invoices'); // Revalider la liste
+  revalidatePath(`/dashboard/invoices/${id}`); // Revalider la page de détail
+  redirect('/dashboard/invoices'); // Rediriger vers la liste
+}
