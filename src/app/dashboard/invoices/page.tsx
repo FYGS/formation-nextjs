@@ -1,18 +1,51 @@
-import InvoicesTable from "@/components/dashboard/invoices/InvoicesTable"; // Vérifiez le chemin d'importation
+// src/app/dashboard/invoices/page.tsx
+import InvoicesTable from '@/components/dashboard/invoices/InvoicesTable';
+import { fetchFilteredInvoices } from '@/lib/data'; // Importer notre fonction
+import Search from '@/components/dashboard/Search';
+import Pagination from '@/components/dashboard/Pagination';
+import { CreateInvoice } from '@/components/dashboard/invoices/Buttons';
 
-export default function InvoicesPage() {
-  return (
-    <div>
-      <div className="flex justify-between items-center mb-6">
-        <h1 className="text-3xl font-semibold text-slate-800 dark:text-white">
-          Liste des Factures
-        </h1>
-        {/* Plus tard, un bouton pour ajouter une facture ici */}
-        {/* <button className="bg-green-500 hover:bg-green-600 text-white font-semibold py-2 px-4 rounded-lg shadow-md transition-colors">
-          Ajouter une Facture
-        </button> */}
-      </div>
-      <InvoicesTable />
-    </div>
-  );
+export const dynamic = 'force-dynamic'; // Force le rendu dynamique pour cette route
+
+// Cette page est maintenant un Server Component
+export default async function InvoicesPage({
+	searchParams,
+}: {
+	searchParams?: Promise<{
+		query?: string;
+		page?: string;
+	}>;
+}) {
+	const query = (await searchParams)?.query || '';
+	const currentPage = Number((await searchParams)?.page) || 1;
+
+	// Récupérer les données directement sur le serveur
+	const { invoices, totalPages } = await fetchFilteredInvoices(
+		query,
+		currentPage,
+	);
+
+	return (
+		<div className="w-full">
+			<div className="flex w-full items-center justify-between mb-6">
+				<h1 className="text-2xl md:text-3xl font-heading font-bold text-slate-800 dark:text-white">
+					Factures
+				</h1>
+				{/* Bouton Créer une facture */}
+				<CreateInvoice />
+			</div>
+			<div className="mt-4 flex items-center justify-between gap-2 md:mt-8">
+        {/* Barre de recherche */}
+				<Search placeholder="Rechercher des factures..." />
+			</div>
+
+			{/* La table reçoit maintenant les factures en props */}
+			<InvoicesTable invoices={invoices} />
+
+			<div className="mt-5 flex w-full justify-center">
+				{/* Pagination */}
+				<Pagination totalPages={totalPages} />
+			</div>
+		</div>
+	);
 }
