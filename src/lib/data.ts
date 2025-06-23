@@ -62,6 +62,10 @@ export async function fetchFilteredInvoices(
   noStore();
   const offset = (currentPage - 1) * ITEMS_PER_PAGE;
 
+  // SIMULER UNE ERREUR SERVEUR
+  console.log("Simulating server error in fetchFilteredInvoices...");
+  throw new Error('Erreur simulée lors de la récupération des factures !');
+
   try {
     const invoicesQuery = sql`
       SELECT
