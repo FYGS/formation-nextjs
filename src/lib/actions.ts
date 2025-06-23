@@ -1,73 +1,86 @@
-// src/app/lib/actions.ts
-'use server'; // Indique que toutes les fonctions exportées dans ce fichier sont des Server Actions
+// src/lib/actions.ts
+'use server';
 
 import { sql } from '@vercel/postgres';
 import { revalidatePath } from 'next/cache';
 import { redirect } from 'next/navigation';
-import { z } from 'zod'; // Nous l'utiliserons pour la validation à l'étape suivante
+import { z } from 'zod';
 
-// Schéma de validation avec Zod (sera affiné plus tard)
+// Définition du schéma Zod pour la validation de la facture
 const InvoiceSchema = z.object({
-  customerId: z.string().uuid({ message: "Veuillez sélectionner un client." }),
-  amount: z.coerce // Transforme la chaîne en nombre
-    .number()
-    .gt(0, { message: "Veuillez entrer un montant supérieur à 0." }),
-  status: z.enum(['pending', 'paid', 'overdue'], {
-    invalid_type_error: "Veuillez sélectionner un statut de facture.",
+  id: z.string(), // Utilisé pour la modification, pas pour la création ici
+  customerId: z.string({
+    invalid_type_error: 'Veuillez sélectionner un client.', // Message si pas une chaîne (ne devrait pas arriver avec <select>)
+  }).uuid({ message: "L'ID client doit être un UUID valide." }), // S'assurer que c'est un UUID
+
+  amount: z.coerce // z.coerce tente de convertir la valeur en nombre avant de valider
+    .number({
+      invalid_type_error: "Veuillez entrer un montant numérique.",
+    })
+    .gt(0, { message: 'Le montant doit être supérieur à 0 €.' }),
+
+  status: z.enum(['pending', 'paid', 'overdue'], { // Assure que le statut est l'une de ces valeurs
+    invalid_type_error: 'Veuillez sélectionner un statut pour la facture.',
   }),
-  // date: z.string(), // La date sera générée automatiquement pour l'instant
+  date: z.string(), // La date sera générée, donc pas besoin de validation complexe ici pour la création
 });
 
-// Ce type sera utilisé pour le retour d'état avec useFormState
+// Nous n'avons besoin que d'un sous-ensemble pour la création
+const CreateInvoiceSchema = InvoiceSchema.omit({ id: true, date: true });
+
 export type State = {
   errors?: {
     customerId?: string[];
     amount?: string[];
     status?: string[];
-    // date?: string[]; // Si on ajoutait la date au formulaire
+    // Si on ajoutait plus de champs comme la date ou des items
+    // date?: string[];
+    // items?: string[]; // Pour une erreur globale sur les items
   };
-  message?: string | null;
+  message?: string | null; // Pour les messages généraux (succès, erreur DB)
 };
 
 export async function createInvoice(prevState: State, formData: FormData) {
-  // Valider les champs du formulaire en utilisant Zod
-  const validatedFields = InvoiceSchema.safeParse({
+  // Validation des champs avec le schéma de création
+  const validatedFields = CreateInvoiceSchema.safeParse({
     customerId: formData.get('customerId'),
     amount: formData.get('amount'),
     status: formData.get('status'),
   });
 
-  // Si la validation du formulaire échoue, retourner les erreurs tôt. Sinon, continuer.
+  // Si la validation échoue, retourner les erreurs spécifiques
   if (!validatedFields.success) {
-    console.log('Validation Errors:', validatedFields.error.flatten().fieldErrors);
+    console.error('Validation Errors (createInvoice):', validatedFields.error.flatten().fieldErrors);
     return {
       errors: validatedFields.error.flatten().fieldErrors,
       message: 'Champs manquants ou invalides. Échec de la création de la facture.',
     };
   }
 
-  // Préparer les données pour l'insertion dans la base de données
+  // Préparer les données pour l'insertion
   const { customerId, amount, status } = validatedFields.data;
-  const amountInCents = amount * 100; // Convertir en centimes
-  const date = new Date().toISOString().split('T')[0]; // Date actuelle au format YYYY-MM-DD
+  const amountInCents = Math.round(amount * 100); // Convertir en centimes et arrondir
+  const currentDate = new Date().toISOString().split('T')[0]; // Date actuelle au format YYYY-MM-DD
 
   try {
     await sql`
       INSERT INTO invoices (customer_id, amount_in_cents, status, date)
-      VALUES (${customerId}, ${amountInCents}, ${status}, ${date})
+      VALUES (${customerId}, ${amountInCents}, ${status}, ${currentDate})
     `;
   } catch (error) {
-    console.error('Database Error:', error);
+    console.error('Database Error (createInvoice):', error);
     return {
       message: 'Erreur de base de données : Échec de la création de la facture.',
+      errors: {}, // Pas d'erreurs de champ spécifiques ici, mais une erreur globale
     };
   }
 
-  // Revalider le cache pour la page des factures et rediriger l'utilisateur.
-  revalidatePath('/dashboard/invoices'); // Met à jour les données affichées sur cette page
-  redirect('/dashboard/invoices'); // Redirige vers la liste des factures
+  // Si succès, revalider le cache et rediriger
+  revalidatePath('/dashboard/invoices');
+  redirect('/dashboard/invoices');
 
-  // Théoriquement, le redirect interrompt l'exécution, donc ce return n'est pas toujours atteint.
-  // Mais pour la cohérence du type de retour de useFormState, on peut l'ajouter.
-  // return { message: 'Facture créée avec succès (ce message ne sera pas vu à cause du redirect)', errors: {} };
+  // Ce code n'est pas atteint à cause du redirect, mais pour satisfaire le type de retour
+  // return { message: 'Facture créée avec succès !', errors: {} };
 }
+
+// ... (autres actions comme updateInvoice, deleteInvoice viendront ici) ...
