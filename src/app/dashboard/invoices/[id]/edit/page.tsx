@@ -8,9 +8,9 @@ import type { Metadata } from 'next';
 export async function generateMetadata({
 	params,
 }: {
-	params: { id: string };
+	params: Promise<{ id: string }>;
 }): Promise<Metadata> {
-	const id = params.id;
+	const id = (await params).id;
 	const invoice = await fetchInvoiceById(id); // Peut être null
 	return {
 		title: invoice
@@ -22,9 +22,9 @@ export async function generateMetadata({
 export default async function EditInvoicePage({
 	params,
 }: {
-	params: { id: string };
+	params: Promise<{ id: string }>;
 }) {
-	const id = params.id;
+	const id = (await params).id;
 	// Récupérer les données de la facture et des clients en parallèle
 	const [invoice, customers] = await Promise.all([
 		fetchInvoiceById(id),

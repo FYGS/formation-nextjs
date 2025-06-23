@@ -11,13 +11,13 @@ export const dynamic = 'force-dynamic'; // Force le rendu dynamique pour cette r
 export default async function InvoicesPage({
 	searchParams,
 }: {
-	searchParams?: {
+	searchParams?: Promise<{
 		query?: string;
 		page?: string;
-	};
+	}>;
 }) {
-	const query = searchParams?.query || '';
-	const currentPage = Number(searchParams?.page) || 1;
+	const query = (await searchParams)?.query || '';
+	const currentPage = Number((await searchParams)?.page) || 1;
 
 	// Récupérer les données directement sur le serveur
 	const { invoices, totalPages } = await fetchFilteredInvoices(
