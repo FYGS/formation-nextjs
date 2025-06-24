@@ -2,6 +2,7 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { sql } from '@vercel/postgres';
 import { unstable_noStore as noStore } from 'next/cache';
+import { User } from './definitions';
 
 // Types que nous allons utiliser
 export type Customer = {
@@ -233,5 +234,16 @@ export async function fetchCustomers(): Promise<Customer[]> {
   } catch (err) {
     console.error('Database Error fetching customers:', err);
     throw new Error('Failed to fetch all customers.');
+  }
+}
+
+// Fonction pour récupérer un utilisateur par email
+export async function getUser(email: string): Promise<User | undefined> {
+  try {
+    const user = await sql<User>`SELECT * FROM users WHERE email=${email}`;
+    return user.rows[0];
+  } catch (error) {
+    console.error('Failed to fetch user:', error);
+    throw new Error('Failed to fetch user.');
   }
 }
