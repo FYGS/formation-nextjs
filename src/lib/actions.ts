@@ -6,26 +6,29 @@ import { revalidatePath } from 'next/cache';
 import { redirect } from 'next/navigation';
 import { z } from 'zod';
 
-// Définition du schéma Zod pour la validation de la facture
 const InvoiceSchema = z.object({
-  id: z.string(), // Utilisé pour la modification, pas pour la création ici
+  id: z.string(),
   customerId: z.string({
-    invalid_type_error: 'Veuillez sélectionner un client.', // Message si pas une chaîne (ne devrait pas arriver avec <select>)
-  }).uuid({ message: "L'ID client doit être un UUID valide." }), // S'assurer que c'est un UUID
+    required_error: "Le client est requis.", // Si le champ est manquant
+    invalid_type_error: 'Veuillez sélectionner un client valide.',
+  }).uuid({ message: "L'ID du client doit être un UUID valide." }),
 
-  amount: z.coerce // z.coerce tente de convertir la valeur en nombre avant de valider
+  amount: z.coerce
     .number({
-      invalid_type_error: "Veuillez entrer un montant numérique.",
+      required_error: "Le montant est requis.",
+      invalid_type_error: "Veuillez entrer un montant numérique valide.",
     })
-    .gt(0, { message: 'Le montant doit être supérieur à 0 €.' }),
+    .min(0.01, { message: 'Le montant doit être d\'au moins 0.01 €.' }) // Utiliser .min() au lieu de .gt(0) pour inclure 0.01
+    .transform(val => Math.round(val * 100)) // Déplacer la transformation en centimes ici
+    .refine(val => val > 0, { message: 'Le montant en centimes doit être supérieur à 0.' }), // Valider les centimes si besoin
 
-  status: z.enum(['pending', 'paid', 'overdue'], { // Assure que le statut est l'une de ces valeurs
-    invalid_type_error: 'Veuillez sélectionner un statut pour la facture.',
+  status: z.enum(['pending', 'paid', 'overdue'], {
+    required_error: "Le statut est requis.",
+    invalid_type_error: 'Veuillez sélectionner un statut valide pour la facture.',
   }),
-  date: z.string(), // La date sera générée, donc pas besoin de validation complexe ici pour la création
+  date: z.string(),
 });
 
-// Nous n'avons besoin que d'un sous-ensemble pour la création
 const CreateInvoiceSchema = InvoiceSchema.omit({ id: true, date: true });
 
 export type State = {
@@ -58,15 +61,14 @@ export async function createInvoice(prevState: State, formData: FormData) {
   }
 
   // Préparer les données pour l'insertion
-  const { customerId, amount, status } = validatedFields.data;
-  const amountInCents = Math.round(amount * 100); // Convertir en centimes et arrondir
-  const currentDate = new Date().toISOString().split('T')[0]; // Date actuelle au format YYYY-MM-DD
+  const { customerId, amount: amountInCents, status } = validatedFields.data; // amount est déjà en centimes
+  const currentDate = new Date().toISOString().split('T')[0];
 
   try {
     await sql`
-      INSERT INTO invoices (customer_id, amount_in_cents, status, date)
-      VALUES (${customerId}, ${amountInCents}, ${status}, ${currentDate})
-    `;
+    INSERT INTO invoices (customer_id, amount_in_cents, status, date)
+    VALUES (${customerId}, ${amountInCents}, ${status}, ${currentDate})
+  `;
   } catch (error) {
     console.error('Database Error (createInvoice):', error);
     return {
@@ -107,15 +109,14 @@ export async function updateInvoice(
     };
   }
 
-  const { customerId, amount, status } = validatedFields.data;
-  const amountInCents = Math.round(amount * 100);
+  const { customerId, amount: amountInCents, status } = validatedFields.data;
 
   try {
     await sql`
-      UPDATE invoices
-      SET customer_id = ${customerId}, amount_in_cents = ${amountInCents}, status = ${status}
-      WHERE id = ${id}
-    `;
+    UPDATE invoices
+    SET customer_id = ${customerId}, amount_in_cents = ${amountInCents}, status = ${status}
+    WHERE id = ${id}
+  `;
   } catch (error) {
     console.error('Database Error (updateInvoice):', error);
     return {
