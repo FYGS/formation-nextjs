@@ -48,6 +48,7 @@ export default function CreateForm({ customers }: { customers: Customer[] }) {
 							className="peer block w-full cursor-pointer rounded-md border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-700 py-2 pl-10 text-sm outline-2 placeholder:text-slate-500 dark:placeholder:text-slate-400 text-slate-900 dark:text-slate-50 focus:ring-1 focus:ring-green-500 focus:border-green-500"
 							defaultValue=""
 							aria-describedby="customer-error" // Lié à l'affichage d'erreur
+							required
 						>
 							<option value="" disabled>
 								Sélectionner un client
@@ -92,6 +93,7 @@ export default function CreateForm({ customers }: { customers: Customer[] }) {
 								placeholder="Entrer le montant en EUR"
 								className="peer block w-full rounded-md border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-700 py-2 pl-10 text-sm outline-2 placeholder:text-slate-500 dark:placeholder:text-slate-400 text-slate-900 dark:text-slate-50 focus:ring-1 focus:ring-green-500 focus:border-green-500"
 								aria-describedby="amount-error"
+								required
 							/>
 							<CurrencyEuroIcon className="pointer-events-none absolute left-3 top-1/2 h-[18px] w-[18px] -translate-y-1/2 text-slate-500 peer-focus:text-green-500" />
 						</div>
@@ -167,20 +169,18 @@ export default function CreateForm({ customers }: { customers: Customer[] }) {
 					</div>
 				</fieldset>
 
-				{/* Affichage d'un message d'erreur général ou de succès (si pas de redirect) */}
-				<div aria-live="polite" aria-atomic="true">
-					{state.message && (
-						<p
-							className={`mt-2 text-sm ${
-								state.errors
-									? 'text-red-500 dark:text-red-400'
-									: 'text-green-500 dark:text-green-400'
-							}`}
+				{/* Message d'erreur général (s'il y en a) */}
+				{state.message &&
+					!state.errors?.customerId &&
+					!state.errors?.amount &&
+					!state.errors?.status && (
+						<div
+							aria-live="assertive"
+							className="my-2 text-sm text-red-600 dark:text-red-400"
 						>
-							{state.message}
-						</p>
+							<p>{state.message}</p>
+						</div>
 					)}
-				</div>
 			</div>
 
 			<div className="mt-6 flex justify-end gap-4">
