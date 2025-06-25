@@ -4,6 +4,30 @@ import { fetchFilteredInvoices } from '@/lib/data'; // Importer notre fonction
 import Search from '@/components/dashboard/Search';
 import Pagination from '@/components/dashboard/Pagination';
 import { CreateInvoice } from '@/components/dashboard/invoices/Buttons';
+import { Metadata } from 'next';
+
+export const metadata: Metadata = {
+	title: 'Liste des Factures', // Sera "Liste des Factures | Acorn Finance"
+	description:
+		'Consultez, recherchez et gérez toutes vos factures sur Acorn Finance.',
+	openGraph: {
+		// title: "Acorn Finance : Simplifiez Votre Gestion Financière", // Héritera du title global ou du title.default
+		// description: "Découvrez comment Acorn Finance peut transformer la gestion de vos finances.", // Héritera de la description ci-dessus
+		images: [
+			{
+				url: '/og-invoices.png', // Assurez-vous que cette image existe dans public/
+				width: 1200,
+				height: 630,
+				alt: "Page des Factures Acorn Finance",
+			},
+		],
+		url: 'https://acorn-finance.vercel.app', // Héritera de RootLayout si non spécifié
+	},
+	// Les pages du dashboard sont généralement derrière une authentification,
+	// donc le SEO est moins critique, mais de bonnes métadonnées peuvent aider à la navigation
+	// ou si certaines parties du dashboard devenaient publiques.
+	// Par défaut, on peut laisser les robots hériter du RootLayout ou les bloquer spécifiquement.
+};
 
 export const dynamic = 'force-dynamic'; // Force le rendu dynamique pour cette route
 
