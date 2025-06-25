@@ -2,30 +2,36 @@
 'use server';
 
 import { sql } from '@vercel/postgres';
+import { AuthError } from 'next-auth';
 import { revalidatePath } from 'next/cache';
 import { redirect } from 'next/navigation';
 import { z } from 'zod';
+import { signIn, signOut as authSignOut } from './auth';
+import bcrypt from 'bcryptjs';
 
-// Définition du schéma Zod pour la validation de la facture
 const InvoiceSchema = z.object({
-  id: z.string(), // Utilisé pour la modification, pas pour la création ici
+  id: z.string(),
   customerId: z.string({
-    invalid_type_error: 'Veuillez sélectionner un client.', // Message si pas une chaîne (ne devrait pas arriver avec <select>)
-  }).uuid({ message: "L'ID client doit être un UUID valide." }), // S'assurer que c'est un UUID
+    required_error: "Le client est requis.", // Si le champ est manquant
+    invalid_type_error: 'Veuillez sélectionner un client valide.',
+  }).uuid({ message: "L'ID du client doit être un UUID valide." }),
 
-  amount: z.coerce // z.coerce tente de convertir la valeur en nombre avant de valider
+  amount: z.coerce
     .number({
-      invalid_type_error: "Veuillez entrer un montant numérique.",
+      required_error: "Le montant est requis.",
+      invalid_type_error: "Veuillez entrer un montant numérique valide.",
     })
-    .gt(0, { message: 'Le montant doit être supérieur à 0 €.' }),
+    .min(0.01, { message: 'Le montant doit être d\'au moins 0.01 €.' }) // Utiliser .min() au lieu de .gt(0) pour inclure 0.01
+    .transform(val => Math.round(val * 100)) // Déplacer la transformation en centimes ici
+    .refine(val => val > 0, { message: 'Le montant en centimes doit être supérieur à 0.' }), // Valider les centimes si besoin
 
-  status: z.enum(['pending', 'paid', 'overdue'], { // Assure que le statut est l'une de ces valeurs
-    invalid_type_error: 'Veuillez sélectionner un statut pour la facture.',
+  status: z.enum(['pending', 'paid', 'overdue'], {
+    required_error: "Le statut est requis.",
+    invalid_type_error: 'Veuillez sélectionner un statut valide pour la facture.',
   }),
-  date: z.string(), // La date sera générée, donc pas besoin de validation complexe ici pour la création
+  date: z.string(),
 });
 
-// Nous n'avons besoin que d'un sous-ensemble pour la création
 const CreateInvoiceSchema = InvoiceSchema.omit({ id: true, date: true });
 
 export type State = {
@@ -58,15 +64,14 @@ export async function createInvoice(prevState: State, formData: FormData) {
   }
 
   // Préparer les données pour l'insertion
-  const { customerId, amount, status } = validatedFields.data;
-  const amountInCents = Math.round(amount * 100); // Convertir en centimes et arrondir
-  const currentDate = new Date().toISOString().split('T')[0]; // Date actuelle au format YYYY-MM-DD
+  const { customerId, amount: amountInCents, status } = validatedFields.data; // amount est déjà en centimes
+  const currentDate = new Date().toISOString().split('T')[0];
 
   try {
     await sql`
-      INSERT INTO invoices (customer_id, amount_in_cents, status, date)
-      VALUES (${customerId}, ${amountInCents}, ${status}, ${currentDate})
-    `;
+    INSERT INTO invoices (customer_id, amount_in_cents, status, date)
+    VALUES (${customerId}, ${amountInCents}, ${status}, ${currentDate})
+  `;
   } catch (error) {
     console.error('Database Error (createInvoice):', error);
     return {
@@ -107,15 +112,14 @@ export async function updateInvoice(
     };
   }
 
-  const { customerId, amount, status } = validatedFields.data;
-  const amountInCents = Math.round(amount * 100);
+  const { customerId, amount: amountInCents, status } = validatedFields.data;
 
   try {
     await sql`
-      UPDATE invoices
-      SET customer_id = ${customerId}, amount_in_cents = ${amountInCents}, status = ${status}
-      WHERE id = ${id}
-    `;
+    UPDATE invoices
+    SET customer_id = ${customerId}, amount_in_cents = ${amountInCents}, status = ${status}
+    WHERE id = ${id}
+  `;
   } catch (error) {
     console.error('Database Error (updateInvoice):', error);
     return {
@@ -143,5 +147,160 @@ export async function deleteInvoice(id: string) {
   } catch (error) {
     console.error('Database Error (deleteInvoice):', error);
     return { message: 'Erreur de base de données : Échec de la suppression de la facture.' };
+  }
+}
+
+// Type d'état pour le formulaire de connexion
+export type LoginFormState = {
+  errors?: {
+    credentials?: string[]; // Erreur générale pour les identifiants
+    // email?: string[]; // Si on voulait des erreurs par champ
+    // password?: string[];
+  };
+  message?: string | null; // Pour d'autres messages (ex: succès non applicable ici)
+};
+
+export async function authenticate(
+  prevState: LoginFormState | undefined, // prevState peut être undefined au premier appel
+  formData: FormData,
+) {
+  try {
+    // Le provider 'credentials' est celui que nous avons configuré dans auth.ts
+    // Les clés dans l'objet passé à signIn (email, password) doivent correspondre
+    // aux `name` des inputs dans votre formulaire de connexion.
+    // La redirection vers /dashboard en cas de succès est gérée par le middleware ou le callback authorized.
+    await signIn('credentials', formData);
+    // Ce code ne sera PAS atteint si signIn redirige avec succès.
+    // S'il est atteint, c'est qu'il y a eu un problème non géré par une redirection ou AuthError.
+    // On pourrait considérer cela comme un cas d'erreur inattendu.
+    return { message: 'Tentative de connexion traitée.', errors: { credentials: ['Un problème inattendu est survenu.'] } };
+  } catch (error) {
+    // Si l'erreur est NEXT_REDIRECT, elle doit être relancée pour que Next.js puisse l'exécuter.
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    if ((error as any).digest?.startsWith('NEXT_REDIRECT')) {
+      throw error;
+    }
+
+    if (error instanceof AuthError) {
+      switch (error.type) {
+        case 'CredentialsSignin':
+          return { message: null, errors: { credentials: ['Identifiants invalides. Veuillez réessayer.'] } };
+        case 'CallbackRouteError': // Peut arriver si le callback authorize retourne null
+          console.error('CallbackRouteError details:', error); // Log pour le débogage serveur
+          return { message: null, errors: { credentials: ['Erreur de configuration ou identifiants invalides.'] } };
+        default:
+          console.error('Auth Error Type:', error.type);
+          return { message: null, errors: { credentials: ['Une erreur d\'authentification est survenue.'] } };
+      }
+    }
+    // Pour toute autre erreur non gérée (qui n'est pas une AuthError ou NEXT_REDIRECT)
+    console.error('Unexpected Error during authentication:', error);
+    return { message: null, errors: { credentials: ['Une erreur serveur inattendue est survenue.'] } };
+  }
+}
+
+export async function signOutUser() {
+  await authSignOut({ redirectTo: '/' }); // Redirige vers / après déconnexion
+}
+
+const SignupFormSchema = z.object({
+  name: z.string()
+    .min(2, { message: "Le nom doit contenir au moins 2 caractères." })
+    .max(255, { message: "Le nom ne peut pas dépasser 255 caractères." }),
+  email: z.string().email({ message: "Veuillez entrer une adresse e-mail valide." }),
+  password: z.string()
+    .min(6, { message: "Le mot de passe doit contenir au moins 6 caractères." })
+    .max(255, { message: "Le mot de passe ne peut pas dépasser 255 caractères." }),
+});
+
+export type SignupFormState = {
+  errors?: {
+    name?: string[];
+    email?: string[];
+    password?: string[];
+    form?: string[]; // Pour les erreurs générales du formulaire
+  };
+  message?: string | null; // Message général (succès ou erreur)
+};
+
+export async function signUpUser(
+  prevState: SignupFormState | undefined, // prevState est fourni par useActionState
+  formData: FormData,
+): Promise<SignupFormState> { // L'action doit retourner un type compatible avec SignupFormState
+  const validatedFields = SignupFormSchema.safeParse({
+    name: formData.get('name'),
+    email: formData.get('email'),
+    password: formData.get('password'),
+  });
+
+  if (!validatedFields.success) {
+    return {
+      errors: validatedFields.error.flatten().fieldErrors,
+      message: 'Champs manquants ou invalides. Échec de la création du compte.',
+    };
+  }
+
+  const { name, email, password } = validatedFields.data;
+  const hashedPassword = await bcrypt.hash(password, 10);
+
+  try {
+    const existingUser = await sql`SELECT id FROM users WHERE email = ${email}`;
+    if (existingUser.rowCount && existingUser.rowCount > 0) {
+      return {
+        errors: { email: ['Cette adresse e-mail est déjà utilisée.'] },
+        message: 'Échec de la création du compte.', // message peut être string
+      };
+    }
+
+    await sql`
+      INSERT INTO users (name, email, password)
+      VALUES (${name}, ${email}, ${hashedPassword})
+    `;
+  } catch (dbError) {
+    console.error('Database Error (signUpUser - insert):', dbError);
+    return {
+      errors: { form: ['Une erreur de base de données est survenue.'] },
+      message: 'Échec de la création du compte en raison d\'une erreur serveur.', // message string
+    };
+  }
+
+  // Tentative de connexion automatique après inscription
+  try {
+    await signIn('credentials', {
+      email,
+      password, // Passer le mot de passe original, pas le hash, à signIn
+      redirectTo: '/dashboard', // signIn s'occupera de la redirection
+    });
+    // Si signIn réussit et redirige, ce code n'est pas atteint.
+    // S'il ne redirige pas mais réussit (rare), on pourrait retourner un état de succès.
+    // Mais la redirection est le comportement standard.
+    // Pour satisfaire la signature de retour au cas où :
+    return { message: "Connexion en cours...", errors: {} }; // message string
+  } catch (authError) {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    if ((authError as any).digest?.startsWith('NEXT_REDIRECT')) {
+      // La redirection est en cours, la relancer pour que Next.js la gère
+      throw authError;
+    }
+
+    // Si signIn échoue spécifiquement (ex: AuthError) mais que l'utilisateur a été créé
+    console.error('Sign In after Signup Error:', authError);
+    if (authError instanceof AuthError) {
+      // On ne veut probablement pas afficher une erreur de "credentials" ici car l'utilisateur
+      // vient d'être créé. On veut plutôt le rediriger vers login avec un message.
+      // Cependant, useActionState attend un retour.
+      // Pour éviter la redirection ici et afficher un message sur la page signup :
+      return {
+        message: null, // message null
+        errors: { form: ['Compte créé ! La connexion automatique a échoué. Veuillez vous connecter manuellement.'] }
+      };
+    }
+    // Pour d'autres erreurs inattendues lors de la tentative de signIn
+    return {
+      message: null, // message null
+      errors: { form: ['Compte créé, mais une erreur inattendue est survenue lors de la connexion automatique.'] }
+    };
+    // Alternative plus simple si on veut toujours rediriger vers login après création et échec de signIn auto:
+    // redirect('/login?message=Compte créé avec succès ! Veuillez vous connecter.');
   }
 }

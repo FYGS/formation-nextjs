@@ -1,5 +1,39 @@
+import { Metadata } from "next";
 import Image from "next/image";
 import Link from "next/link";
+
+export const metadata: Metadata = {
+  // Le titre de la page d'accueil sera pris depuis `title.default` dans RootLayout.
+  // Si nous voulions un titre spécifique UNIQUEMENT pour la page d'accueil (sans le template),
+  title: { absolute: "Acorn Finance - Gestion Financière Intelligente" },
+  // Mais pour la page d'accueil, le titre par défaut du site est souvent suffisant.
+
+  // Vous pouvez surcharger ou ajouter des métadonnées Open Graph spécifiques à la page d'accueil
+  // si elles doivent être différentes de celles définies dans RootLayout.
+  // Par exemple, une image spécifique pour le partage de la page d'accueil.
+  openGraph: {
+    // title: "Acorn Finance : Simplifiez Votre Gestion Financière", // Héritera du title global ou du title.default
+    // description: "Découvrez comment Acorn Finance peut transformer la gestion de vos finances.", // Héritera de la description ci-dessus
+    images: [
+      {
+        url: '/og-homepage.png', // Assurez-vous que cette image existe dans public/
+        width: 1200,
+        height: 630,
+        alt: 'Page d\'accueil Acorn Finance',
+      },
+    ],
+    url: 'https://acorn-finance.vercel.app', // Héritera de RootLayout si non spécifié
+  },
+  // Idem pour Twitter cards
+  twitter: {
+    card: 'summary_large_image',
+    // title: "Acorn Finance : Simplifiez Votre Gestion Financière",
+    // description: "Découvrez comment Acorn Finance peut transformer la gestion de vos finances.",
+    images: ['/twitter-homepage.png'], // Assurez-vous que cette image existe dans public/
+  },
+  // Mots-clés spécifiques à la page d'accueil
+  keywords: ['gestion financière', 'facturation en ligne', 'suivi dépenses', 'tableau de bord PME', 'logiciel finance',],
+};
 
 export default function Home() {
   return (

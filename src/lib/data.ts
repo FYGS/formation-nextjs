@@ -2,6 +2,8 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { sql } from '@vercel/postgres';
 import { unstable_noStore as noStore } from 'next/cache';
+import { User } from './definitions';
+import { BanknotesIcon, ClockIcon, UserGroupIcon, InboxIcon } from '@heroicons/react/24/outline'; // Pour les cartes KPI
 
 // Types que nous allons utiliser
 export type Customer = {
@@ -233,5 +235,179 @@ export async function fetchCustomers(): Promise<Customer[]> {
   } catch (err) {
     console.error('Database Error fetching customers:', err);
     throw new Error('Failed to fetch all customers.');
+  }
+}
+
+// Fonction pour récupérer un utilisateur par email
+export async function getUser(email: string): Promise<User | undefined> {
+  try {
+    const user = await sql<User>`SELECT * FROM users WHERE email=${email}`;
+    return user.rows[0];
+  } catch (error) {
+    console.error('Failed to fetch user:', error);
+    throw new Error('Failed to fetch user.');
+  }
+}
+
+// Mettre à jour le type Customer si on veut ajouter le total des factures ou le nombre de factures
+export type CustomerWithStats = Customer & {
+  total_invoices: number;
+  total_pending_in_cents: number;
+  total_paid_in_cents: number;
+};
+
+// Nombre de clients par page pour la pagination
+const CUSTOMERS_PER_PAGE = 10;
+
+// Nouvelle fonction pour récupérer les clients avec recherche et pagination
+export async function fetchFilteredCustomers(
+  query: string,
+  currentPage: number,
+): Promise<{ customers: Customer[]; totalPages: number }> { // Retourne des Customer simples pour l'instant
+  noStore();
+  const offset = (currentPage - 1) * CUSTOMERS_PER_PAGE;
+
+  try {
+    const customersQuery = sql<Customer>`
+      SELECT
+        id,
+        name,
+        email,
+        image_url
+        -- Pour des stats plus tard :
+        -- COUNT(invoices.id) AS total_invoices,
+        -- SUM(CASE WHEN invoices.status = 'pending' THEN invoices.amount_in_cents ELSE 0 END) AS total_pending_in_cents,
+        -- SUM(CASE WHEN invoices.status = 'paid' THEN invoices.amount_in_cents ELSE 0 END) AS total_paid_in_cents
+      FROM customers
+      -- LEFT JOIN invoices ON customers.id = invoices.customer_id -- Si on ajoute les stats
+      WHERE
+        customers.name ILIKE ${`%${query}%`} OR
+        customers.email ILIKE ${`%${query}%`}
+      -- GROUP BY customers.id, customers.name, customers.email, customers.image_url -- Si on ajoute les stats
+      ORDER BY customers.name ASC
+      LIMIT ${CUSTOMERS_PER_PAGE} OFFSET ${offset}
+    `;
+
+    const countQuery = sql`
+      SELECT COUNT(*)
+      FROM customers
+      WHERE
+        customers.name ILIKE ${`%${query}%`} OR
+        customers.email ILIKE ${`%${query}%`}
+    `;
+
+    const [customersData, countData] = await Promise.all([
+      customersQuery,
+      countQuery,
+    ]);
+
+    // Pour l'instant, customersData.rows est déjà de type Customer[]
+    const customers = customersData.rows;
+
+    const totalCount = Number(countData.rows[0].count ?? '0');
+    const totalPages = Math.ceil(totalCount / CUSTOMERS_PER_PAGE);
+
+    return { customers, totalPages };
+  } catch (error) {
+    console.error('Database Error fetching customers:', error);
+    throw new Error('Failed to fetch customers.');
+  }
+}
+
+// L'ancienne fonction fetchCustomers peut être renommée ou supprimée si plus utilisée
+// export async function fetchAllCustomersSimple(): Promise<Customer[]> { /* ... */ }
+// Si vous la gardez, assurez-vous qu'elle est distincte.
+// Pour l'instant, je vais commenter l'ancienne et la remplacer par la nouvelle fetchCustomers pour le formulaire de création de facture
+// ou nous pouvons juste utiliser fetchFilteredCustomers avec query='' et page=1 pour obtenir tous les clients pour le select.
+// Pour le select du formulaire de facture, on veut tous les clients, pas de pagination.
+export async function fetchAllCustomersForSelect(): Promise<Customer[]> {
+  noStore();
+  try {
+    const data = await sql<Customer>`
+        SELECT
+            id,
+            name
+        FROM customers
+        ORDER BY name ASC
+        `;
+    return data.rows;
+  } catch (err) {
+    console.error('Database Error fetching all customers for select:', err);
+    throw new Error('Failed to fetch all customers for select.');
+  }
+}
+
+// Type pour les cartes de statistiques
+export type CardInfo = { // Renommé de CardData pour éviter la confusion avec le type en tant que valeur
+  label: string;
+  value: string | number;
+  type: 'invoices' | 'customers' | 'paid' | 'pending';
+  icon: React.ComponentType<{ className?: string }>; // L'icône est maintenant un composant React
+};
+
+export async function fetchCardData(): Promise<CardInfo[]> {
+  noStore();
+  try {
+    const invoiceCountPromise = sql`SELECT COUNT(*) FROM invoices`;
+    const customerCountPromise = sql`SELECT COUNT(*) FROM customers`;
+    const invoiceStatusPromise = sql`SELECT
+      SUM(CASE WHEN status = 'paid' THEN amount_in_cents ELSE 0 END) AS paid_in_cents,
+      SUM(CASE WHEN status = 'pending' THEN amount_in_cents ELSE 0 END) AS pending_in_cents
+      FROM invoices`;
+
+    const [invoiceCount, customerCount, invoiceStatus] = await Promise.all([
+      invoiceCountPromise,
+      customerCountPromise,
+      invoiceStatusPromise,
+    ]);
+
+    const totalInvoices = Number(invoiceCount.rows[0].count ?? '0');
+    const totalCustomers = Number(customerCount.rows[0].count ?? '0');
+    const totalPaidInvoices = invoiceStatus.rows[0].paid_in_cents ? invoiceStatus.rows[0].paid_in_cents / 100 : 0;
+    const totalPendingInvoices = invoiceStatus.rows[0].pending_in_cents ? invoiceStatus.rows[0].pending_in_cents / 100 : 0;
+
+    const formatCurrency = (amount: number) => new Intl.NumberFormat('fr-FR', { style: 'currency', currency: 'EUR' }).format(amount);
+
+    return [
+      { label: 'Factures Payées', value: formatCurrency(totalPaidInvoices), type: 'paid', icon: BanknotesIcon },
+      { label: 'Factures en Attente', value: formatCurrency(totalPendingInvoices), type: 'pending', icon: ClockIcon },
+      { label: 'Nombre de Factures', value: totalInvoices, type: 'invoices', icon: InboxIcon },
+      { label: 'Nombre de Clients', value: totalCustomers, type: 'customers', icon: UserGroupIcon },
+    ];
+  } catch (error) {
+    console.error('Database Error fetching card data:', error);
+    throw new Error('Failed to fetch card data.');
+  }
+}
+
+export async function fetchLatestInvoices(limit = 5): Promise<FormattedInvoice[]> {
+  noStore();
+  try {
+    // Utiliser une requête similaire à fetchFilteredInvoices mais sans pagination/query et avec une limite
+    const data = await sql<InvoiceFromDB & { customer_name: string; customer_email: string; customer_image_url: string; }>`
+      SELECT
+        invoices.id,
+        invoices.amount_in_cents,
+        invoices.date,
+        invoices.status,
+        customers.name AS customer_name,
+        customers.email AS customer_email,
+        customers.image_url AS customer_image_url,
+        invoices.customer_id
+      FROM invoices
+      JOIN customers ON invoices.customer_id = customers.id
+      ORDER BY invoices.date DESC
+      LIMIT ${limit};
+    `;
+
+    const latestInvoices = data.rows.map((invoice) => ({
+      ...invoice,
+      amount: invoice.amount_in_cents / 100,
+      date: new Date(invoice.date).toISOString().split('T')[0],
+    })) as FormattedInvoice[];
+    return latestInvoices;
+  } catch (error) {
+    console.error('Database Error fetching latest invoices:', error);
+    throw new Error('Failed to fetch latest invoices.');
   }
 }
