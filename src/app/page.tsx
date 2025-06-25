@@ -22,7 +22,7 @@ export const metadata: Metadata = {
         alt: 'Page d\'accueil Acorn Finance',
       },
     ],
-    url: 'https://acorn-finance.vercel.app', // Héritera de RootLayout si non spécifié
+    url: 'https://acorn-finance-nine.vercel.app', // Héritera de RootLayout si non spécifié
   },
   // Idem pour Twitter cards
   twitter: {

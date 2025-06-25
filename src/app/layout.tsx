@@ -41,14 +41,14 @@ export const metadata: Metadata = {
 	openGraph: {
 		type: 'website',
 		locale: 'fr_FR', // Important pour la langue
-		url: 'https://acorn-finance.vercel.app', // Remplacez par votre URL de production
+		url: 'https://acorn-finance-nine.vercel.app', // Remplacez par votre URL de production
 		title: 'Acorn Finance - Votre Tableau de Bord Financier',
 		description: 'Gérez vos factures, dépenses et revenus facilement.',
 		siteName: 'Acorn Finance',
 		images: [
 			// Vous pouvez ajouter des images pour le partage
 			{
-				url: 'https://acorn-finance.vercel.app/og-image.png', // URL absolue
+				url: 'https://acorn-finance-nine.vercel.app/og-image.png', // URL absolue
 				width: 1200,
 				height: 630,
 				alt: 'Acorn Finance Open Graph Image',
@@ -62,7 +62,7 @@ export const metadata: Metadata = {
 		// creator: "@votrecreatorhandle", // Optionnel: handle Twitter du créateur de contenu
 		title: 'Acorn Finance - Votre Tableau de Bord Financier',
 		description: 'Gérez vos factures, dépenses et revenus facilement.',
-		images: ["https://acorn-finance.vercel.app/twitter-image.png"], // URL absolue de l'image pour Twitter
+		images: ["https://acorn-finance-nine.vercel.app/twitter-image.png"], // URL absolue de l'image pour Twitter
 	},
 	// Favicons et icônes
 	icons: {
@@ -102,10 +102,10 @@ export const metadata: Metadata = {
 	// Canonical URL (très important pour le SEO pour éviter le contenu dupliqué)
 	// Vous pouvez définir une URL canonique de base ici, et la surcharger dans les pages enfants
 	//alternates: {
-	//  canonical: "https://acorn-finance.vercel.app",
+	//  canonical: "https://acorn-finance-nine.vercel.app",
 	//  languages: {
-	//    'en-US': 'https://acorn-finance.vercel.app/en-US',
-	//    'es-ES': 'https://acorn-finance.vercel.app/es-ES',
+	//    'en-US': 'https://acorn-finance-nine.vercel.app/en-US',
+	//    'es-ES': 'https://acorn-finance-nine.vercel.app/es-ES',
 	//  },
 	//},
 };

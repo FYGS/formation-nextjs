@@ -21,7 +21,7 @@ export const metadata: Metadata = {
 				alt: "Page des Factures Acorn Finance",
 			},
 		],
-		url: 'https://acorn-finance.vercel.app', // Héritera de RootLayout si non spécifié
+		url: 'https://acorn-finance-nine.vercel.app', // Héritera de RootLayout si non spécifié
 	},
 	// Les pages du dashboard sont généralement derrière une authentification,
 	// donc le SEO est moins critique, mais de bonnes métadonnées peuvent aider à la navigation
