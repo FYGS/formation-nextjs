@@ -7,6 +7,7 @@ import { revalidatePath } from 'next/cache';
 import { redirect } from 'next/navigation';
 import { z } from 'zod';
 import { signIn, signOut as authSignOut } from './auth';
+import bcrypt from 'bcryptjs';
 
 const InvoiceSchema = z.object({
   id: z.string(),
@@ -200,4 +201,106 @@ export async function authenticate(
 
 export async function signOutUser() {
   await authSignOut({ redirectTo: '/' }); // Redirige vers / après déconnexion
+}
+
+const SignupFormSchema = z.object({
+  name: z.string()
+    .min(2, { message: "Le nom doit contenir au moins 2 caractères." })
+    .max(255, { message: "Le nom ne peut pas dépasser 255 caractères." }),
+  email: z.string().email({ message: "Veuillez entrer une adresse e-mail valide." }),
+  password: z.string()
+    .min(6, { message: "Le mot de passe doit contenir au moins 6 caractères." })
+    .max(255, { message: "Le mot de passe ne peut pas dépasser 255 caractères." }),
+});
+
+export type SignupFormState = {
+  errors?: {
+    name?: string[];
+    email?: string[];
+    password?: string[];
+    form?: string[]; // Pour les erreurs générales du formulaire
+  };
+  message?: string | null; // Message général (succès ou erreur)
+};
+
+export async function signUpUser(
+  prevState: SignupFormState | undefined, // prevState est fourni par useActionState
+  formData: FormData,
+): Promise<SignupFormState> { // L'action doit retourner un type compatible avec SignupFormState
+  const validatedFields = SignupFormSchema.safeParse({
+    name: formData.get('name'),
+    email: formData.get('email'),
+    password: formData.get('password'),
+  });
+
+  if (!validatedFields.success) {
+    return {
+      errors: validatedFields.error.flatten().fieldErrors,
+      message: 'Champs manquants ou invalides. Échec de la création du compte.',
+    };
+  }
+
+  const { name, email, password } = validatedFields.data;
+  const hashedPassword = await bcrypt.hash(password, 10);
+
+  try {
+    const existingUser = await sql`SELECT id FROM users WHERE email = ${email}`;
+    if (existingUser.rowCount && existingUser.rowCount > 0) {
+      return {
+        errors: { email: ['Cette adresse e-mail est déjà utilisée.'] },
+        message: 'Échec de la création du compte.', // message peut être string
+      };
+    }
+
+    await sql`
+      INSERT INTO users (name, email, password)
+      VALUES (${name}, ${email}, ${hashedPassword})
+    `;
+  } catch (dbError) {
+    console.error('Database Error (signUpUser - insert):', dbError);
+    return {
+      errors: { form: ['Une erreur de base de données est survenue.'] },
+      message: 'Échec de la création du compte en raison d\'une erreur serveur.', // message string
+    };
+  }
+
+  // Tentative de connexion automatique après inscription
+  try {
+    await signIn('credentials', {
+      email,
+      password, // Passer le mot de passe original, pas le hash, à signIn
+      redirectTo: '/dashboard', // signIn s'occupera de la redirection
+    });
+    // Si signIn réussit et redirige, ce code n'est pas atteint.
+    // S'il ne redirige pas mais réussit (rare), on pourrait retourner un état de succès.
+    // Mais la redirection est le comportement standard.
+    // Pour satisfaire la signature de retour au cas où :
+    return { message: "Connexion en cours...", errors: {} }; // message string
+  } catch (authError) {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    if ((authError as any).digest?.startsWith('NEXT_REDIRECT')) {
+      // La redirection est en cours, la relancer pour que Next.js la gère
+      throw authError;
+    }
+
+    // Si signIn échoue spécifiquement (ex: AuthError) mais que l'utilisateur a été créé
+    console.error('Sign In after Signup Error:', authError);
+    if (authError instanceof AuthError) {
+      // On ne veut probablement pas afficher une erreur de "credentials" ici car l'utilisateur
+      // vient d'être créé. On veut plutôt le rediriger vers login avec un message.
+      // Cependant, useActionState attend un retour.
+      // Pour éviter la redirection ici et afficher un message sur la page signup :
+      return {
+        message: null, // message null
+        errors: { form: ['Compte créé ! La connexion automatique a échoué. Veuillez vous connecter manuellement.'] }
+      };
+    }
+    // Pour d'autres erreurs inattendues lors de la tentative de signIn
+    return {
+      message: null, // message null
+      errors: { form: ['Compte créé, mais une erreur inattendue est survenue lors de la connexion automatique.'] }
+    };
+    // Alternative plus simple si on veut toujours rediriger vers login après création et échec de signIn auto:
+    // redirect('/login?message=Compte créé avec succès ! Veuillez vous connecter.');
+  }
 }
