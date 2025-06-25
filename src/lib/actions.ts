@@ -2,9 +2,11 @@
 'use server';
 
 import { sql } from '@vercel/postgres';
+import { AuthError } from 'next-auth';
 import { revalidatePath } from 'next/cache';
 import { redirect } from 'next/navigation';
 import { z } from 'zod';
+import { signIn, signOut as authSignOut } from './auth';
 
 const InvoiceSchema = z.object({
   id: z.string(),
@@ -145,4 +147,57 @@ export async function deleteInvoice(id: string) {
     console.error('Database Error (deleteInvoice):', error);
     return { message: 'Erreur de base de données : Échec de la suppression de la facture.' };
   }
+}
+
+// Type d'état pour le formulaire de connexion
+export type LoginFormState = {
+  errors?: {
+    credentials?: string[]; // Erreur générale pour les identifiants
+    // email?: string[]; // Si on voulait des erreurs par champ
+    // password?: string[];
+  };
+  message?: string | null; // Pour d'autres messages (ex: succès non applicable ici)
+};
+
+export async function authenticate(
+  prevState: LoginFormState | undefined, // prevState peut être undefined au premier appel
+  formData: FormData,
+) {
+  try {
+    // Le provider 'credentials' est celui que nous avons configuré dans auth.ts
+    // Les clés dans l'objet passé à signIn (email, password) doivent correspondre
+    // aux `name` des inputs dans votre formulaire de connexion.
+    // La redirection vers /dashboard en cas de succès est gérée par le middleware ou le callback authorized.
+    await signIn('credentials', formData);
+    // Ce code ne sera PAS atteint si signIn redirige avec succès.
+    // S'il est atteint, c'est qu'il y a eu un problème non géré par une redirection ou AuthError.
+    // On pourrait considérer cela comme un cas d'erreur inattendu.
+    return { message: 'Tentative de connexion traitée.', errors: { credentials: ['Un problème inattendu est survenu.'] } };
+  } catch (error) {
+    // Si l'erreur est NEXT_REDIRECT, elle doit être relancée pour que Next.js puisse l'exécuter.
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    if ((error as any).digest?.startsWith('NEXT_REDIRECT')) {
+      throw error;
+    }
+
+    if (error instanceof AuthError) {
+      switch (error.type) {
+        case 'CredentialsSignin':
+          return { message: null, errors: { credentials: ['Identifiants invalides. Veuillez réessayer.'] } };
+        case 'CallbackRouteError': // Peut arriver si le callback authorize retourne null
+          console.error('CallbackRouteError details:', error); // Log pour le débogage serveur
+          return { message: null, errors: { credentials: ['Erreur de configuration ou identifiants invalides.'] } };
+        default:
+          console.error('Auth Error Type:', error.type);
+          return { message: null, errors: { credentials: ['Une erreur d\'authentification est survenue.'] } };
+      }
+    }
+    // Pour toute autre erreur non gérée (qui n'est pas une AuthError ou NEXT_REDIRECT)
+    console.error('Unexpected Error during authentication:', error);
+    return { message: null, errors: { credentials: ['Une erreur serveur inattendue est survenue.'] } };
+  }
+}
+
+export async function signOutUser() {
+  await authSignOut({ redirectTo: '/' }); // Redirige vers / après déconnexion
 }
