@@ -1,0 +1,69 @@
+# .github/workflows/ci.yml
+
+name: Next.js CI # Nom du workflow, affiché sur GitHub
+
+# Événements déclencheurs du workflow
+on:
+  push: # Se déclenche sur les push vers n'importe quelle branche
+    branches:
+      - main # Spécifiquement sur main
+      - develop # Et sur develop (si vous utilisez cette branche)
+      - 'feature/**' # Et sur les branches de fonctionnalités
+  pull_request: # Se déclenche sur les pull requests vers main ou develop
+    branches:
+      - main
+      - develop
+  workflow_dispatch: # Permet de déclencher manuellement le workflow depuis l'UI GitHub
+
+jobs:
+  build_and_lint: # Nom du job (vous pouvez en avoir plusieurs)
+    name: Build & Lint # Nom affiché pour le job
+    runs-on: ubuntu-latest # Type de machine virtuelle pour exécuter le job
+
+    strategy:
+      matrix:
+        node-version: [18.x, 20.x] # Exécuter sur plusieurs versions de Node (optionnel)
+        # Si vous n'avez qu'une version, mettez juste [18.x] ou [20.x]
+
+    steps:
+      # Étape 1: Récupérer le code du dépôt
+      - name: Checkout repository
+        uses: actions/checkout@v4 # Utilise une action GitHub pré-faite
+
+      # Étape 2: Configurer Node.js (selon la version de la matrice)
+      - name: Set up Node.js ${{ matrix.node-version }}
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ matrix.node-version }}
+          cache: 'npm' # Mettre en cache les dépendances npm pour accélérer les builds futurs
+
+      # Étape 3: Installer les dépendances
+      # Utiliser `npm ci` est recommandé en CI car c'est plus rapide et plus strict que `npm install`
+      # (utilise package-lock.json)
+      - name: Install dependencies
+        run: npm ci
+
+      # Étape 4: Exécuter le Linter (ESLint)
+      # Le script `lint` est défini dans votre package.json
+      - name: Run ESLint
+        run: npm run lint
+
+      # Étape 5: Exécuter le Build de l'application Next.js
+      # Le script `build` est défini dans votre package.json
+      # Cela vérifie que l'application compile sans erreurs.
+      # Les variables d'environnement de build (non secrètes) pourraient être nécessaires ici
+      # pour un build réussi s'il y a des dépendances à ces variables au moment du build.
+      # Pour les secrets (comme POSTGRES_URL), le build Next.js ne devrait pas en avoir besoin
+      # car le data fetching se fait au runtime pour les pages dynamiques.
+      # Si des variables NEXT_PUBLIC_ sont utilisées au build time, elles doivent être dispos
+      # via GitHub Secrets si elles sont sensibles, ou définies dans le workflow si publiques.
+      - name: Build Next.js application
+        run: npm run build
+        # env: # Exemple si des variables d'environnement de build étaient nécessaires
+        #   NEXT_PUBLIC_SOME_CONFIG: ${{ secrets.NEXT_PUBLIC_SOME_CONFIG_FOR_BUILD }}
+
+
+      # Étape 6 (Optionnelle): Exécuter les tests unitaires/intégration
+      # Si vous avez des tests configurés avec `npm test`
+      # - name: Run tests
+      #   run: npm test
