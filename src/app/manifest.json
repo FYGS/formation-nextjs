@@ -1,11 +1,13 @@
 {
 	"name": "Acorn Finance",
 	"short_name": "Acorn",
+	"description": "Acorn Finance is a personal finance app that helps you manage your finances effectively.",
+	"start_url": "/",
 	"icons": [
 		{
 			"src": "/acorn-logo.svg",
 			"sizes": "any",
-			"type": "image/svg",
+			"type": "image/svg+xml",
 			"purpose": "maskable"
 		}
 	],

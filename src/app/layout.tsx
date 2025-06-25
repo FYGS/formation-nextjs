@@ -72,7 +72,7 @@ export const metadata: Metadata = {
 		// autres icônes si besoin
 	},
 	// Pour les PWA (Progressive Web Apps)
-	// manifest: '/site.webmanifest', // Chemin vers votre fichier manifest
+	manifest: '/manifest.json', // Chemin vers votre fichier manifest
 	// Robots pour les moteurs de recherche
 	robots: {
 		// Contrôle fin de l'indexation
