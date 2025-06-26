@@ -257,7 +257,7 @@ export type CustomerWithStats = Customer & {
 };
 
 // Nombre de clients par page pour la pagination
-const CUSTOMERS_PER_PAGE = 10;
+const CUSTOMERS_PER_PAGE = 8;
 
 // Nouvelle fonction pour récupérer les clients avec recherche et pagination
 export async function fetchFilteredCustomers(

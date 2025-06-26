@@ -1,6 +1,5 @@
 "use client"; // Sidebar devient un Client Component car usePathname est un hook client
 
-import Image from "next/image";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useState } from "react";
@@ -65,22 +64,6 @@ export default function Sidebar() {
         )}
       >
         <div className="flex grow flex-col gap-y-5 overflow-y-auto bg-slate-900 px-6 pb-4 h-full border-r border-slate-700">
-          <div className="flex h-16 shrink-0 items-center">
-            <Link
-              href="/dashboard"
-              className="flex items-center text-xl font-bold text-green-400"
-            >
-              <Image
-                src="/acorn-logo.svg"
-                alt="Acorn Dashboard Logo"
-                width={24}
-                height={24}
-                className="mr-2"
-              />
-              Acorn DB
-            </Link>
-          </div>
-
           <nav className="flex flex-1 flex-col">
             <ul role="list" className="flex flex-1 flex-col gap-y-7">
               <li>
